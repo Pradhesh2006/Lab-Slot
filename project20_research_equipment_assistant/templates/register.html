@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Create account{% endblock %}
+{% block content %}
+<main class="auth-wrap">
+  <section class="card auth-card">
+    <h1>Create your LabSlot account</h1>
+    <p class="sub">Passwords are salted and hashed before they are stored.</p>
+    <form method="post" id="register-form" novalidate>
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <label class="field"><span>Username</span>
+        <input type="text" name="username" id="username" value="{{ form.username }}" autocomplete="username" maxlength="32" required autofocus>
+        <div class="error-text" data-error-for="username"></div>
+      </label>
+      <label class="field"><span>Email</span>
+        <input type="email" name="email" id="email" value="{{ form.email }}" autocomplete="email" required>
+        <div class="error-text" data-error-for="email"></div>
+      </label>
+      <div class="row">
+        <label class="field"><span>Password</span>
+          <input type="password" name="password" id="password" autocomplete="new-password" minlength="8" required>
+          <div class="error-text" data-error-for="password"></div>
+        </label>
+        <label class="field"><span>Confirm</span>
+          <input type="password" name="confirm_password" id="confirm_password" autocomplete="new-password" required>
+          <div class="error-text" data-error-for="confirm_password"></div>
+        </label>
+      </div>
+      <button class="btn block" type="submit">Create account</button>
+    </form>
+    <p class="auth-foot">Already registered? <a href="{{ url_for('login') }}">Sign in</a></p>
+  </section>
+</main>
+{% endblock %}
+{% block scripts %}
+<script>
+  document.getElementById("register-form").addEventListener("submit", function (e) {
+    const val = function (id) { return document.getElementById(id).value; };
+    const rules = [
+      ["username", /^[A-Za-z0-9_]{3,32}$/.test(val("username").trim()), "3-32 letters, numbers or underscores."],
+      ["email", /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(val("email").trim()), "Enter a valid email address."],
+      ["password", val("password").length >= 8, "At least 8 characters."],
+      ["confirm_password", val("password") === val("confirm_password"), "Passwords do not match."]
+    ];
+    let ok = true;
+    rules.forEach(function (r) {
+      document.querySelector('[data-error-for="' + r[0] + '"]').textContent = r[1] ? "" : r[2];
+      if (!r[1]) ok = false;
+    });
+    if (!ok) e.preventDefault();
+  });
+</script>
+{% endblock %}

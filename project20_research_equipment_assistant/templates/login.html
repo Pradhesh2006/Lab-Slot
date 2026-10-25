@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block content %}
+<main class="auth-wrap">
+  <section class="card auth-card">
+    <h1>Sign in to LabSlot</h1>
+    <p class="sub">Check research equipment sessions and ask lab-policy questions.</p>
+    <form method="post" id="login-form" novalidate>
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <label class="field"><span>Username</span>
+        <input type="text" name="username" id="username" autocomplete="username" required autofocus>
+        <div class="error-text" data-error-for="username"></div>
+      </label>
+      <label class="field"><span>Password</span>
+        <input type="password" name="password" id="password" autocomplete="current-password" required>
+        <div class="error-text" data-error-for="password"></div>
+      </label>
+      <button class="btn block" type="submit">Sign in</button>
+    </form>
+    <p class="auth-foot">New to LabSlot? <a href="{{ url_for('register') }}">Create an account</a></p>
+  </section>
+</main>
+{% endblock %}
+{% block scripts %}
+<script>
+  document.getElementById("login-form").addEventListener("submit", function (e) {
+    let ok = true;
+    this.querySelectorAll("[data-error-for]").forEach(function (el) { el.textContent = ""; });
+    ["username", "password"].forEach(function (id) {
+      if (!document.getElementById(id).value.trim()) {
+        document.querySelector('[data-error-for="' + id + '"]').textContent = "This field is required.";
+        ok = false;
+      }
+    });
+    if (!ok) e.preventDefault();
+  });
+</script>
+{% endblock %}

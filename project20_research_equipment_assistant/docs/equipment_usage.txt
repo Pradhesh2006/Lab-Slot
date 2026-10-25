@@ -1,0 +1,11 @@
+LabSlot Equipment Usage Policy
+
+Workspace care
+Users must inspect the workspace before starting and leave it clean after completing the session.
+
+Damaged or malfunctioning equipment
+Report damaged or malfunctioning equipment to the laboratory supervisor.
+Do not attempt unauthorized repairs.
+
+Scope of this assistant
+This assistant checks administrative booking conditions only, not technical operating procedures.

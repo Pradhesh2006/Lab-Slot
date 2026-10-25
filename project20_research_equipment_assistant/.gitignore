@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Secrets and local state
+.env
+*.db
+*.sqlite3
+
+# Build artefacts
+*.zip
+labslot_presentation.pptx
+
+# Node / Promptfoo
+node_modules/
+.promptfoo/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+.git/

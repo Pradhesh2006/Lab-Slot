@@ -1,0 +1,19 @@
+LabSlot Equipment Catalogue
+
+MIC-01 - Digital Microscope
+Equipment code: MIC-01
+Equipment type: digital microscope
+Required training module: MIC-BASIC
+Maximum session length: up to two hours (120 minutes)
+
+PRN-01 - 3D Printer
+Equipment code: PRN-01
+Equipment type: 3D printer
+Required training module: PRINT-BASIC
+Maximum session length: up to four hours (240 minutes)
+
+SCN-01 - Document Scanner
+Equipment code: SCN-01
+Equipment type: document scanner
+Required training module: none (no training module is required)
+Maximum session length: up to one hour (60 minutes)

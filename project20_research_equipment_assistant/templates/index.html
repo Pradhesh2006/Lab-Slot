@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block topbar_right %}
+  <span class="user-chip">operator <b>{{ username }}</b></span>
+  <form method="post" action="{{ url_for('logout') }}">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <button class="btn ghost" type="submit">Log out</button>
+  </form>
+{% endblock %}
+
+{% block content %}
+<main class="container">
+  <div class="page-head">
+    <h1>LabSlot Dashboard</h1>
+    <p>Validate a research equipment session against LabSlot booking rules, or ask the policy assistant.</p>
+  </div>
+
+  <div class="grid">
+    <!-- ===================== LabSlot validation card ===================== -->
+    <section class="card" aria-labelledby="check-title">
+      <h2 id="check-title">LabSlot Equipment Validation</h2>
+      <p class="hint">Bookings run 09:00-17:00 on the same day. This does not confirm availability.</p>
+
+      <form id="check-form" novalidate>
+        <label class="field"><span>Equipment</span>
+          <select id="equipment" name="equipment_code">
+            {% for code, item in equipment.items() %}
+              <option value="{{ code }}">{{ code }} - {{ item.name }} (max {{ item.max_duration_minutes }} min)</option>
+            {% endfor %}
+          </select>
+        </label>
+        <div class="row">
+          <label class="field"><span>Start time (24h)</span>
+            <input type="time" id="start_time" name="start_time" value="10:00" required>
+          </label>
+          <label class="field"><span>Duration (minutes)</span>
+            <input type="number" id="duration" name="duration_minutes" value="90" min="1" step="1" required>
+          </label>
+        </div>
+        <div class="legend">Completed training</div>
+        <div class="checks">
+          {% for code, label in training_modules.items() %}
+            <label class="check">
+              <input type="checkbox" name="completed_training" value="{{ code }}">
+              <span class="box"></span>
+              <span><code>{{ code }}</code><small>{{ label }}</small></span>
+            </label>
+          {% endfor %}
+        </div>
+        <button class="btn block" id="check-btn" type="submit">Check LabSlot Session</button>
+        <div class="error-text" id="check-error" role="alert"></div>
+      </form>
+
+      <div class="result" id="result" hidden>
+        <span class="badge" id="result-badge">-</span>
+        <div class="result-meta">
+          <div class="stat"><span>Equipment</span><strong id="r-equipment">-</strong></div>
+          <div class="stat"><span>Computed end time</span><strong id="r-end">-</strong></div>
+        </div>
+        <ul class="violations" id="r-violations"></ul>
+        <p class="note">Eligible to request only. Equipment availability is not confirmed.</p>
+      </div>
+    </section>
+
+    <!-- ===================== RAG chat panel ===================== -->
+    <section class="card" aria-labelledby="ask-title">
+      <h2 id="ask-title">Ask LabSlot</h2>
+      <p class="hint">Answers are grounded in the LabSlot knowledge documents and cite their sources.</p>
+      <div class="suggest">
+        <button type="button" class="chip">Which training module is required for the 3D printer?</button>
+        <button type="button" class="chip">What should users do with malfunctioning equipment?</button>
+        <button type="button" class="chip">Is MIC-01 already booked tomorrow?</button>
+      </div>
+      <div class="chat-log" id="chat-log" aria-live="polite">
+        <div class="msg bot">Hi, I'm LabSlot. Ask me about equipment training, session limits, booking hours or reporting faults.</div>
+      </div>
+      <form class="chat-form" id="chat-form">
+        <input type="text" id="question" maxlength="500" placeholder="Ask about lab policies..." autocomplete="off" required>
+        <button class="btn" id="ask-btn" type="submit">Ask</button>
+      </form>
+    </section>
+  </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const CSRF = {{ csrf_token()|tojson }};
+
+  async function postJSON(url, body) {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-CSRF-Token": CSRF },
+      body: JSON.stringify(body)
+    });
+    let data = {};
+    try { data = await res.json(); } catch (_) { data = { error: "Unexpected server response." }; }
+    return { ok: res.ok, data: data };
+  }
+
+  /* ---------- LabSlot session check ---------- */
+  const checkForm = document.getElementById("check-form");
+  checkForm.addEventListener("submit", async function (e) {
+    e.preventDefault();
+    const errorEl = document.getElementById("check-error");
+    const btn = document.getElementById("check-btn");
+    errorEl.textContent = "";
+    const start = document.getElementById("start_time").value;
+    const duration = parseInt(document.getElementById("duration").value, 10);
+    if (!start) { errorEl.textContent = "Enter a start time in HH:MM format."; return; }
+    if (!Number.isInteger(duration) || duration <= 0) { errorEl.textContent = "Duration must be a positive whole number."; return; }
+
+    btn.disabled = true;
+    const training = Array.from(checkForm.querySelectorAll('input[name="completed_training"]:checked')).map(function (c) { return c.value; });
+    const { ok, data } = await postJSON("/api/check", {
+      equipment_code: document.getElementById("equipment").value,
+      start_time: start,
+      duration_minutes: duration,
+      completed_training: training
+    });
+    btn.disabled = false;
+    if (!ok) { errorEl.textContent = data.error || "Request failed."; return; }
+
+    const badge = document.getElementById("result-badge");
+    badge.textContent = data.eligible_to_request ? "Eligible" : "Violations Found";
+    badge.className = "badge " + (data.eligible_to_request ? "ok" : "bad");
+    document.getElementById("r-equipment").textContent = data.equipment_code + " · " + data.equipment_name;
+    document.getElementById("r-end").textContent = data.requested_end_time;
+    const list = document.getElementById("r-violations");
+    list.replaceChildren();
+    data.violations.forEach(function (v) {
+      const li = document.createElement("li");
+      li.textContent = v;
+      list.appendChild(li);
+    });
+    document.getElementById("result").hidden = false;
+  });
+
+  /* ---------- RAG chat ---------- */
+  const log = document.getElementById("chat-log");
+  const input = document.getElementById("question");
+  const askBtn = document.getElementById("ask-btn");
+
+  function addMessage(kind, text, citations) {
+    const div = document.createElement("div");
+    div.className = "msg " + kind;
+    div.textContent = text;
+    if (citations && citations.length) {
+      const wrap = document.createElement("div");
+      wrap.className = "cites";
+      citations.forEach(function (c) {
+        const tag = document.createElement("span");
+        tag.className = "cite";
+        tag.textContent = c.source + " #" + c.chunk + " · " + c.score.toFixed(2);
+        wrap.appendChild(tag);
+      });
+      div.appendChild(wrap);
+    }
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+    return div;
+  }
+
+  async function ask(question) {
+    addMessage("user", question);
+    const pending = addMessage("bot typing", "retrieving context...");
+    askBtn.disabled = true;
+    try {
+      const { ok, data } = await postJSON("/api/ask", { question: question });
+      pending.remove();
+      if (!ok) addMessage("err", data.error || "Request failed.");
+      else addMessage("bot", data.answer, data.citations);
+    } catch (_) {
+      pending.remove();
+      addMessage("err", "Network error. Please try again.");
+    }
+    askBtn.disabled = false;
+  }
+
+  document.getElementById("chat-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    const q = input.value.trim();
+    if (!q) return;
+    input.value = "";
+    ask(q);
+  });
+  document.querySelectorAll(".chip").forEach(function (chip) {
+    chip.addEventListener("click", function () { ask(chip.textContent); });
+  });
+</script>
+{% endblock %}

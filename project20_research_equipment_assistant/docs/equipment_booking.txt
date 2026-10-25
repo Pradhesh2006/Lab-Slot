@@ -1,0 +1,14 @@
+LabSlot Equipment Booking Rules
+
+Booking hours
+Research equipment bookings are accepted between 9 AM and 5 PM.
+A session must begin at or after 9 AM and finish at or before 5 PM on the same day.
+
+Session duration
+The maximum session duration depends on the equipment.
+
+Training requirement
+Users must complete the required training before booking.
+
+Availability
+Passing these checks does not confirm equipment availability.

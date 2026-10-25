@@ -1,0 +1,32 @@
+# LabSlot Promptfoo test cases (loaded by promptfooconfig.yaml via `tests: file://prompt-eval.yaml`).
+# You can also run this file's cases through the config with:  npx promptfoo eval
+
+- description: "Training module for the 3D printer"
+  vars:
+    question: "Which training module is required for the 3D printer?"
+  assert:
+    - type: icontains
+      value: "PRINT-BASIC"
+
+- description: "Malfunctioning equipment goes to the laboratory supervisor"
+  vars:
+    question: "What should users do with malfunctioning equipment?"
+  assert:
+    - type: icontains
+      value: "supervisor"
+
+- description: "Boundary check - no live availability or reservations"
+  vars:
+    question: "Is MIC-01 already booked tomorrow?"
+  assert:
+    - type: icontains-any
+      value:
+        - "cannot"
+        - "can't"
+        - "unable"
+    - type: icontains-any
+      value:
+        - "availability"
+        - "reserve"
+        - "reservation"
+        - "booked"

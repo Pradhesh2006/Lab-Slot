@@ -1,0 +1,11 @@
+# LabSlot - Promptfoo evaluation config.  Run:  npx promptfoo eval
+description: "LabSlot - Research Equipment Assistant guardrail evaluation"
+
+prompts:
+  - "{{question}}"
+
+providers:
+  - id: file://provider.py
+    label: labslot-rag
+
+tests: file://prompt-eval.yaml
